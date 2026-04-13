@@ -153,13 +153,13 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
     """
     Scores a single song dictionary against a user preference dictionary.
 
-    Algorithm Recipe (max score = 7.0):
-      +2.0 pts  genre match (categorical)
-      +1.0 pts  mood match  (categorical)
-      +1.5 pts  energy proximity      (numerical, weight 1.5)
-      +1.0 pts  acousticness proximity(numerical, weight 1.0)
-      +0.75 pts valence proximity     (numerical, weight 0.75)
-      +0.75 pts tempo proximity       (numerical, weight 0.75)
+    Algorithm Recipe (max score = 6.5):
+      +1.2 pts  genre match (categorical)  — reduced so bad-fit genre can't override strong numerics
+      +0.8 pts  mood match  (categorical)
+      +2.0 pts  energy proximity      (numerical, weight 2.0) — primary vibe signal
+      +0.80 pts acousticness proximity (numerical, weight 0.80)
+      +0.85 pts valence proximity      (numerical, weight 0.85) — emotional tone
+      +0.65 pts tempo proximity        (numerical, weight 0.65)
 
     Args:
         user_prefs: Dict with keys — genre, mood, energy, and optionally
@@ -174,35 +174,35 @@ def score_song(user_prefs: Dict, song: Dict) -> Tuple[float, List[str]]:
 
     # --- Categorical bonuses ---
     if song["genre"].lower() == user_prefs.get("genre", "").lower():
-        total += 2.0
-        reasons.append(f"genre match ({song['genre']}): +2.00")
+        total += 1.2
+        reasons.append(f"genre match ({song['genre']}): +1.20")
 
     if song["mood"].lower() == user_prefs.get("mood", "").lower():
-        total += 1.0
-        reasons.append(f"mood match ({song['mood']}): +1.00")
+        total += 0.8
+        reasons.append(f"mood match ({song['mood']}): +0.80")
 
     # --- Numerical proximity scores ---
-    # Energy: weight 1.5, range 0.0–1.0
+    # Energy: weight 2.0 (primary vibe signal), range 0.0–1.0
     target_energy = float(user_prefs.get("energy", 0.5))
-    energy_score = 1.5 * (1 - abs(song["energy"] - target_energy) / 1.0)
+    energy_score = 2.0 * (1 - abs(song["energy"] - target_energy) / 1.0)
     total += energy_score
     reasons.append(f"energy proximity: +{energy_score:.2f}")
 
-    # Acousticness: weight 1.0, range 0.0–1.0
+    # Acousticness: weight 0.80, range 0.0–1.0
     target_acousticness = float(user_prefs.get("acousticness", 0.08))
-    acousticness_score = 1.0 * (1 - abs(song["acousticness"] - target_acousticness) / 1.0)
+    acousticness_score = 0.80 * (1 - abs(song["acousticness"] - target_acousticness) / 1.0)
     total += acousticness_score
     reasons.append(f"acousticness proximity: +{acousticness_score:.2f}")
 
-    # Valence: weight 0.75, range 0.0–1.0
+    # Valence: weight 0.85 (emotional tone), range 0.0–1.0
     target_valence = float(user_prefs.get("valence", 0.5))
-    valence_score = 0.75 * (1 - abs(song["valence"] - target_valence) / 1.0)
+    valence_score = 0.85 * (1 - abs(song["valence"] - target_valence) / 1.0)
     total += valence_score
     reasons.append(f"valence proximity: +{valence_score:.2f}")
 
-    # Tempo: weight 0.75, max range 168 BPM
+    # Tempo: weight 0.65, max range 168 BPM
     target_tempo = float(user_prefs.get("tempo_bpm", 110))
-    tempo_score = 0.75 * (1 - abs(song["tempo_bpm"] - target_tempo) / 168)
+    tempo_score = 0.65 * (1 - abs(song["tempo_bpm"] - target_tempo) / 168)
     total += tempo_score
     reasons.append(f"tempo proximity: +{tempo_score:.2f}")
 
