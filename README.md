@@ -11,7 +11,7 @@ Your goal is to:
 - Evaluate what your system gets right and wrong
 - Reflect on how this mirrors real world AI recommenders
 
-Replace this paragraph with your own summary of what your version does.
+VibeFinder 1.0 is a content-based music recommender simulation. It takes a user's stated taste preferences — genre, mood, energy level, acoustic texture, emotional tone, and tempo — and scores every song in a 20-track catalog to find the best matches. Songs are ranked from highest to lowest score and the top results are returned as recommendations, each with a plain-English explanation of why it was chosen. The system was stress-tested with 7 user profiles including adversarial edge cases, and its weights were rebalanced mid-project after discovering that genre was over-weighted relative to energy.
 
 ---
 
@@ -75,10 +75,12 @@ A perfect match scores the full weight. The furthest possible value scores 0.
 
 | Feature | Weight | User Target | Max Range | Max Contribution |
 |---|---|---|---|---|
-| `energy` | 1.5 | 0.85 | 1.0 | +1.50 |
-| `acousticness` | 1.0 | 0.08 | 1.0 | +1.00 |
-| `valence` | 0.75 | 0.50 | 1.0 | +0.75 |
-| `tempo_bpm` | 0.75 | 148 | 168 | +0.75 |
+| `energy` | **2.0** | 0.85 | 1.0 | +2.00 |
+| `acousticness` | **0.80** | 0.08 | 1.0 | +0.80 |
+| `valence` | **0.85** | 0.50 | 1.0 | +0.85 |
+| `tempo_bpm` | **0.65** | 148 | 168 | +0.65 |
+
+> **Note:** Weights were rebalanced during Phase 4 testing. Genre was reduced from 2.0 → 1.2 and energy raised from 1.5 → 2.0 after adversarial testing revealed that high genre weight caused wrong songs to dominate when a genre had only one catalog entry.
 
 #### Step 3 — Total Score
 
@@ -165,6 +167,11 @@ You can add more tests in `tests/test_recommender.py`.
 The following output was produced by running `python3 -m src.main` with the default **pop / happy / energy 0.8** user profile. It confirms that the scoring and ranking logic is working correctly.
 
 ![Terminal Recommendations Output](ss.png)
+![Terminal Recommendations Output](1.png)
+![Terminal Recommendations Output](2.png)
+![Terminal Recommendations Output](3.png)
+![Terminal Recommendations Output](4.png)
+![Terminal Recommendations Output](5.png)
 
 
 
@@ -178,138 +185,29 @@ The following output was produced by running `python3 -m src.main` with the defa
 
 ## Experiments You Tried
 
+**Experiment 1 — Genre weight reduction (2.0 → 1.2)**
+I tested all 7 profiles with genre weight at 2.0 and again at 1.2. At 2.0, the "Classical + High Energy" adversarial profile forced *Requiem for the Lost* (energy 0.22) to rank #1 even though the user asked for energy 0.95 — because the genre bonus alone outweighed the massive energy mismatch. At 1.2, high-energy rock and EDM songs correctly overtook it. Notably, the normal pop and lofi profiles were completely unaffected by the change — pop songs still ranked first for pop users. This showed that genre weight was significantly over-designed in the original version.
 
+**Experiment 2 — Adversarial "Jazz + Opposite Numerics" profile**
+I designed a profile with genre=jazz but with energy=0.99 and acousticness=0.02 — the exact opposite of what jazz songs actually sound like — to see if genre bonus would still force the one jazz song (*Coffee Shop Stories*) to the top. It did not. Intense pop and rock songs outscored it on energy and mood, ranking higher. This revealed that mood + energy combination can override genre preference when the numerical gap is severe enough — a useful edge case for understanding when categorical labels stop mattering.
+
+**Experiment 3 — 7-profile stress test**
+Running all 7 profiles back-to-back revealed a repetition pattern: *Gym Hero*, *Storm Runner*, and *Concrete Jungle* appeared as fallback results across multiple unrelated profiles. These three songs are "energy anchors" — high energy, near-zero acousticness — that score well numerically for almost any high-energy profile regardless of genre. This was unexpected and confirms the need for genre-neighbor bonuses or diversity enforcement in future versions.
+
+---
 
 ## Limitations and Risks
 
-Summarize some limitations of your recommender.
-
-Examples:
-
-- It only works on a tiny catalog
-- It does not understand lyrics or language
-- It might over favor one genre or mood
-
-You will go deeper on this in your model card.
+- **Tiny catalog:** With only 20 songs and 1–2 per genre, niche-genre users (jazz, classical, blues) are structurally underserved. There simply aren't enough songs to give them meaningful variety — the system is forced to recommend the one available option even when it's a poor match.
+- **No lyrics or language understanding:** The system cannot distinguish between two songs with identical audio features but completely different lyrical themes (e.g., a breakup song vs. a motivational anthem can have the same energy and valence).
+- **Filter bubble by design:** The system always returns the same results for the same input. A listener using this system long-term would never discover surprising music outside their declared preference zone.
+- **Energy-centric bias:** After rebalancing, energy represents ~31% of a perfect score, creating an implicit bias toward users who prioritize intensity. A user who cares more about emotional tone than energy level is underserved compared to a user with the reverse preference.
+- **Tags may not match listener experience:** A song tagged `mood: intense` might feel joyful to one listener and aggressive to another. The algorithm has no way to capture this subjectivity — it treats tags as ground truth.
 
 ---
 
 ## Reflection
 
-Read and complete `model_card.md`:
+Building VibeFinder taught me that recommendation systems are fundamentally a series of design decisions disguised as math. The formula itself — `1 - |song - target| / range` — is straightforward once you understand it. But deciding *how much* each feature should matter required real judgment that only testing could validate. I originally set genre weight to 2.0 because genre feels like the most obvious signal of musical taste. Testing immediately proved that wrong: a user asking for high-energy classical music would receive a soft orchestral piece simply because it was the only classical option. Reducing genre weight from 2.0 to 1.2 fixed three separate adversarial failures without breaking any normal profile. The lesson was that good algorithm design is not about finding the "right" formula — it is about iterating on weights until the behavior matches intuition across a wide range of inputs, including the edge cases.
 
-[**Model Card**](model_card.md)
-
-Write 1 to 2 paragraphs here about what you learned:
-
-- about how recommenders turn data into predictions
-- about where bias or unfairness could show up in systems like this
-
-
----
-
-## 7. `model_card_template.md`
-
-Combines reflection and model card framing from the Module 3 guidance. :contentReference[oaicite:2]{index=2}  
-
-```markdown
-# 🎧 Model Card - Music Recommender Simulation
-
-## 1. Model Name
-
-Give your recommender a name, for example:
-
-> VibeFinder 1.0
-
----
-
-## 2. Intended Use
-
-- What is this system trying to do
-- Who is it for
-
-Example:
-
-> This model suggests 3 to 5 songs from a small catalog based on a user's preferred genre, mood, and energy level. It is for classroom exploration only, not for real users.
-
----
-
-## 3. How It Works (Short Explanation)
-
-Describe your scoring logic in plain language.
-
-- What features of each song does it consider
-- What information about the user does it use
-- How does it turn those into a number
-
-Try to avoid code in this section, treat it like an explanation to a non programmer.
-
----
-
-## 4. Data
-
-Describe your dataset.
-
-- How many songs are in `data/songs.csv`
-- Did you add or remove any songs
-- What kinds of genres or moods are represented
-- Whose taste does this data mostly reflect
-
----
-
-## 5. Strengths
-
-Where does your recommender work well
-
-You can think about:
-- Situations where the top results "felt right"
-- Particular user profiles it served well
-- Simplicity or transparency benefits
-
----
-
-## 6. Limitations and Bias
-
-Where does your recommender struggle
-
-Some prompts:
-- Does it ignore some genres or moods
-- Does it treat all users as if they have the same taste shape
-- Is it biased toward high energy or one genre by default
-- How could this be unfair if used in a real product
-
----
-
-## 7. Evaluation
-
-How did you check your system
-
-Examples:
-- You tried multiple user profiles and wrote down whether the results matched your expectations
-- You compared your simulation to what a real app like Spotify or YouTube tends to recommend
-- You wrote tests for your scoring logic
-
-You do not need a numeric metric, but if you used one, explain what it measures.
-
----
-
-## 8. Future Work
-
-If you had more time, how would you improve this recommender
-
-Examples:
-
-- Add support for multiple users and "group vibe" recommendations
-- Balance diversity of songs instead of always picking the closest match
-- Use more features, like tempo ranges or lyric themes
-
----
-
-## 9. Personal Reflection
-
-A few sentences about what you learned:
-
-- What surprised you about how your system behaved
-- How did building this change how you think about real music recommenders
-- Where do you think human judgment still matters, even if the model seems "smart"
-
+Building this also changed how I think about bias in real AI systems. In a 20-song catalog, the bias is obvious and easy to spot: there is one jazz song, and jazz fans are automatically underserved. In a 50-million-song catalog on Spotify, the same bias could exist for thousands of niche genres and be completely invisible — because there are always *enough* songs to make any recommendation look reasonable, even if certain communities are consistently receiving lower-quality results. The most dangerous biases in recommendation systems are not bugs — they are design decisions that seemed neutral at the time but quietly disadvantage users whose tastes were not well-represented in the training data.
