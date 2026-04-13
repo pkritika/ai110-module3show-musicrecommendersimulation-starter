@@ -111,3 +111,24 @@ Add a rule that no more than one song per artist can appear in the top 5. Also i
 
 **Idea 3 — Learn from Feedback**
 After returning recommendations, ask the user: "Did you enjoy this song?" A thumbs-up or thumbs-down response could incrementally adjust the user's stored weights. If a user consistently skips acoustic songs, the system should automatically reduce their `target_acousticness` toward zero over time. This bridges the gap between content-based filtering (what we built) and collaborative filtering (what Spotify uses).
+
+---
+
+## 9. Personal Reflection
+
+### What was your biggest learning moment?
+
+The biggest learning moment was discovering that **the weights matter far more than the formula**. I spent a lot of time thinking about which formula to use for calculating proximity scores (the `1 - |song - target| / range` approach), but the actual formula was straightforward once I understood it. The hard part — the part that required real judgment — was deciding how much each feature should matter relative to the others. When I originally set genre weight to 2.0, I thought I was making a reasonable choice: genre is how people describe music, so it should be important. But testing immediately showed that a 2.0 genre weight meant the system would recommend a soft classical piece to someone asking for high-energy classical music, simply because no other classical options existed. Dropping it to 1.2 fixed three separate adversarial failures at once, without breaking any of the normal profiles. That was a clear signal that my original intuition about genre was wrong — and that the only way to know was to actually test it.
+
+### How did using AI tools help you, and when did you need to double-check them?
+
+AI tools (like this assistant) were most useful for **structuring problems I already understood** — for example, generating the initial CSV rows for the expanded song catalog, suggesting the proximity formula, or formatting the CLI output. They dramatically sped up the surface-level coding work. However, I had to double-check the AI's suggestions in two specific situations. First, when generating new songs for the CSV, the AI-generated values looked plausible but I had to manually verify that the genre-mood-energy combinations were realistic (a "happy metal" song at energy 0.3 would have been nonsensical). Second, when the AI suggested initial weight values, it gave me a reasonable starting point (genre=2.0) that turned out to be wrong once I actually ran the adversarial tests. The AI couldn't run the tests itself — I had to observe the behavior, identify the failure, and make the design decision to rebalance. AI saved time on implementation but the evaluation and judgment were entirely manual.
+
+### What surprised you about how simple algorithms can still "feel" like recommendations?
+
+What surprised me most was how **quickly the output started to feel intuitive** even with very basic math. The first time I ran the system and saw *Sunrise City* appear as #1 for a pop/happy profile, it genuinely felt like a correct recommendation — not because the system "understood" music, but because the proximity scores lined up the way a human would reason about it. A song with the right genre, the right energy, and a bright emotional tone naturally rises to the top. The math doesn't know what pop music is — it just knows that this song is close to the numbers the user provided. The fact that this can produce results that *feel* like music understanding is both impressive and a little unsettling. It shows that a lot of what we call "good recommendations" might be reducible to a small set of well-chosen numerical features, which makes me wonder how much of Spotify's recommendation "intelligence" is truly AI insight versus very well-tuned proximity scoring on a much larger dataset.
+
+### What would you try next if you extended this project?
+
+If I continued this project, my first priority would be **adding a collaborative filtering layer**. Right now VibeFinder is completely isolated — it knows nothing about other users. Adding even a basic version of "users with similar profiles also liked this song" would immediately improve diversity and help surface songs that pure content matching would miss. My second priority would be **expanding the catalog significantly** — at least 100 songs per genre — because the genre orphan problem fundamentally cannot be solved at 20 songs total; there simply aren't enough options to give niche-genre users meaningful variety. Finally, I'd want to add a **real feedback loop**: track which recommendations the user clicked or skipped, and use that history to update their preference weights automatically. The gap between what users *say* they want and what they actually *engage* with is where the interesting algorithmic problems live — and it's also where the most important bias risks appear.
+
