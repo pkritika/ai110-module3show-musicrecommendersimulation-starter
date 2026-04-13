@@ -167,19 +167,21 @@ You can add more tests in `tests/test_recommender.py`.
 The following output was produced by running `python3 -m src.main` with the default **pop / happy / energy 0.8** user profile. It confirms that the scoring and ranking logic is working correctly.
 
 ![Terminal Recommendations Output](ss.png)
-![Terminal Recommendations Output](1.png)
-![Terminal Recommendations Output](2.png)
-![Terminal Recommendations Output](3.png)
-![Terminal Recommendations Output](4.png)
-![Terminal Recommendations Output](5.png)
-
-
 
 **Verification notes:**
 - ✅ *Sunrise City* (pop, happy) correctly ranked #1 — it matches on genre **and** mood, giving the maximum +3.0 categorical bonus, plus near-perfect numerical proximity scores (6.83/7.00).
 - ✅ *Gym Hero* (pop, intense) ranked #2 — genre matches but mood does not, so it scores lower despite having the highest energy in the catalog.
 - ✅ *Rooftop Lights* (indie pop, happy) ranked #3 — mood matches but genre does not, landing between a full-genre-match and a no-match song.
 - ✅ Songs #4 and #5 have no categorical matches at all — they appear purely on the strength of their numerical proximity, demonstrating the scoring system correctly surfaces "vibes-match" songs even without a genre/mood hit.
+
+---
+
+## Terminal Output
+![Terminal Recommendations Output](1.png)
+![Terminal Recommendations Output](2.png)
+![Terminal Recommendations Output](3.png)
+![Terminal Recommendations Output](4.png)
+![Terminal Recommendations Output](5.png)
 
 ---
 
